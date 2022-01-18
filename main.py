@@ -2,21 +2,53 @@
 import os
 import sys
 from pathlib import Path
+
+base_dir = str(Path(__file__).resolve().parent)
+data_dir = os.path.join(base_dir, "data_process", "data")
+os.environ.setdefault("BASE_DIR", base_dir)
+os.environ.setdefault("DATA_DIR", data_dir)
+
 from data_process.data_extraction.extract_arxiv_data import extract_by_cate as ebc
+from data_process.data_extraction.extract_arxiv_data import extract_by_topic as ebt
+from data_process.data_completion.db import create_table, insert_index
+from data_process.conf import cates
 
 def main():
-    base_dir = str(Path(__file__).resolve().parent)
-    data_dir = os.path.join(base_dir, "data_process", "data")
-    os.environ.setdefault("BASE_DIR", base_dir)
-    os.environ.setdefault("DATA_DIR", data_dir)
-
-    # print(os.environ.get("DATA_DIR"))
     argv_len = len(sys.argv)
     if argv_len > 1:
         cmd = sys.argv[1]
         if (cmd == 'extract-cate' and argv_len >= 3):
-            cate = sys.argv[2]
-            ebc(cate, os.path.join(data_dir, "arxiv-metadata-oai-snapshot.data"))
+            cate_name = sys.argv[2]
+            cate = cates.get(cate_name)
+            if (cate != None):
+                ebc(cate, os.path.join(data_dir, "arxiv-metadata-oai-snapshot.data"))
+            else:
+                print("No config cate for: " + cate_name)
+
+        if (cmd == 'extract-topic' and argv_len >= 4):
+            cate_name = sys.argv[2]
+            topic_name = sys.argv[3]
+            cate = cates.get(cate_name)
+            if (cate != None):
+                cate_data_file = os.path.join(data_dir, "raw_" + cate['name'] + ".data.json")
+                # ebc(cate, os.path.join(data_dir, "arxiv-metadata-oai-snapshot.data"))
+                topic = cate['topic'].get(topic_name)
+                if (topic != None): 
+                    # print(topic)
+                    if not os.path.isfile(str(cate_data_file)):
+                        print(cate['name'] +" cate data not exist, extract it first")
+                        ebc(cate, os.path.join(data_dir, "arxiv-metadata-oai-snapshot.data"))
+
+                    data_index = ebt(topic, str(cate_data_file))
+                    val = input("store those index into database?(type yes if you want): ")
+                    if val == 'yes':
+                        tbo = create_table(cate['name'], topic['name'])
+                        insert_index(tbo, data_index)
+                else:
+                    print("No config topic: " + topic_name + " on cate: "+ cate_name)
+            else:
+                print("No config cate for: " + cate_name)
+        
 
 if __name__ == '__main__':
     main()
