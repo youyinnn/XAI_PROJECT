@@ -4,3 +4,5 @@ arxiv-metadata-oai-snapshot.data
 *.data.json
 
 .DS_Store
+
+__pycache__
