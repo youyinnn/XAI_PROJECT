@@ -7,7 +7,11 @@ cates = {
             'ml': {
                 'name': 'ml',
                 'regex': '(machine( |-)learning)'
-            }
+            },
+            'nlp': {
+                'name': 'nlp',
+                'regex': 'nlp'
+            },
         }
     }
 }
