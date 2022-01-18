@@ -42,7 +42,7 @@ def insert_index(tbo, index):
         with engine.connect() as conn:
             for id in p:
                 sql = f'''
-                    INSERT OR IGNORE INTO {tbo} (id, partition, filled) VALUES ('{id}', {p_index}, 0)
+                    insert or ignore into {tbo} (id, partition, filled) values ('{id}', {p_index}, 0)
                 '''
                 conn.execute(text(sql))
         p_index += 1
@@ -60,3 +60,15 @@ def partition(index):
     return [
         part_1, part_2, part_3
     ]
+
+def get_incompleted(table_name, partition):
+    index = []
+    with engine.connect() as conn:
+        sql = f'''
+            select id from {table_name} where partition = {partition} and filled = 0
+        '''
+        result = conn.execute(text(sql))
+        for row in result:
+            index.append(row.id)
+
+    return index

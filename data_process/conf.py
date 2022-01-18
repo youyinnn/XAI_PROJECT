@@ -1,4 +1,3 @@
-
 cates = {
     'cs': {
         'name': 'cs',
