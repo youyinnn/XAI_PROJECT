@@ -75,23 +75,25 @@ def get_incompleted(table_name, partition):
 
 def get_status(table_name, partition):
     index = []
+    if partition == -1:
+        partition = '0,1,2'
     with engine.connect() as conn:
         sql = f'''
-            select count(1) as a from {table_name} where partition = {partition} and filled = 0
+            select count(1) as a from {table_name} where partition in ({partition}) and filled = 0
         '''
         result = conn.execute(text(sql))
         for row in result:
             index.append(row[0])
 
         sql = f'''
-            select count(1) as a from {table_name} where partition = {partition} and filled = 1
+            select count(1) as a from {table_name} where partition in ({partition}) and filled = 1
         '''
         result = conn.execute(text(sql))
         for row in result:
             index.append(row[0])
 
         sql = f'''
-            select count(1) as a from {table_name} where partition = {partition} and filled = 2
+            select count(1) as a from {table_name} where partition in ({partition}) and filled = 2
         '''
         result = conn.execute(text(sql))
         for row in result:
