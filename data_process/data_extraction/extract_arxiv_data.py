@@ -23,7 +23,8 @@ def extract_by_cate(cate, src):
                 del jso["doi"]
                 del jso["submitter"]
                 del jso["comments"]
-                del jso["authors_parsed"]
+                del jso["authors"]
+                # del jso["authors_parsed"]
                 del jso["versions"]
                 del jso["license"]
 
@@ -56,18 +57,34 @@ def extract_by_cate(cate, src):
     # with open("../data/raw_data_format_sample.json", "w") as raw_sample:
     #     json.dump(json.loads(data[0]), raw_sample, ensure_ascii=False, indent=4)
 
-def extract_by_topic(topic, src):
+def extract_by_topic(cate_name, topic, src):
     print("extracting data from " + src + "\nby topic regx: " + topic['regex'])
 
     count = 0
+    total_count = 0
     data_index_out = []
+    data_out = []
     with open(src) as f:
         data_json = json.load(f)
         flags = (re.I | re.M)
         for jso in data_json:
+            total_count += 1
             if (re.search(topic['regex'], jso["title"], flags) != None) or (re.search(topic['regex'], jso["abstract"], flags) != None):
                 count += 1
                 data_index_out.append(jso['id'])
+                if (jso.get('journal-ref') != None):
+                    del jso["journal-ref"]
+                if (jso.get('categories') != None):
+                    del jso["categories"]
+                if (jso.get('update_date') != None):
+                    del jso["update_date"]
+                data_out.append(json.dumps(jso))
 
-    print(f'total {count} indecial')
+    print(f'total {count} indecial out of {total_count}')
+
+    output_topic_data_file_name = os.path.join(os.environ.get("DATA_DIR"), f"raw_{cate_name}_{topic['name']}.data")
+    with open(output_topic_data_file_name, "w") as leaned_raw_topic_data:
+        leaned_raw_topic_data.write("\n".join(data_out))
+        print(output_topic_data_file_name + " saved")
+
     return data_index_out

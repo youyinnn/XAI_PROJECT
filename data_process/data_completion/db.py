@@ -133,7 +133,7 @@ def clear_partition(table_name, keeping_partition):
         sql = f'''
             update {table_name}
             set year = null, venue = null, n_citations = null, filled = 0 
-            where partition <> :keeping_partition
+            where partition is not :keeping_partition
         '''
         conn.execute(
             text(sql), 
@@ -141,3 +141,15 @@ def clear_partition(table_name, keeping_partition):
                 'keeping_partition': keeping_partition,
             }
         )
+
+def get_all_data(table_name):
+    data = {}
+    with engine.connect() as conn:
+        sql = f'''
+            select * from {table_name} where filled = 1 and venue is not ''
+        '''
+        result = conn.execute(text(sql))
+        for row in result:
+            data[row.id] = row
+
+    return data

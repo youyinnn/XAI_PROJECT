@@ -108,3 +108,23 @@ python main.py fill-data cs_ml 0
 
 This will fill the un-filled data from partition 0 of the table `cs_ml`.
 
+
+
+### How to get completed data
+
+Cmd format:
+
+```bash
+python main.py export-data [table_name]
+```
+
+E.g
+
+```bash
+python main.py export-data cs_ml
+```
+
+*Make sure you have the following files:
+
+1. `data_process/data/raw_cs.data.json`
+2. `data_process/data/completed_data.db` with completed data in table `cs_ml`

@@ -1,5 +1,5 @@
-import requests, json, time, sys
-from data_process.data_completion.db import get_incompleted, get_status, fill_data, error_record
+import requests, json, time, sys, os
+from data_process.data_completion.db import get_incompleted, get_status, fill_data, error_record,get_all_data
 from sqlalchemy import text
 
 # fill one record every 3 seconds
@@ -48,4 +48,30 @@ def status(table_name, partition):
 
 
 def export(table_name):
-    print()
+    data_src = os.path.join(os.environ.get("DATA_DIR"), f"raw_{table_name}.data")
+    # print(data_src)
+    all_data = get_all_data(table_name)
+    completed_data = []
+    with open(data_src) as f:
+        Lines = f.readlines()
+        for line in Lines:
+            line_strip = line.strip()
+            jso = json.loads(line_strip)
+            db_data = all_data.get(jso['id'])
+            if db_data != None:
+                authors = []
+                for parsed in jso['authors_parsed']:
+                    authors.append(f'{parsed[1]} {parsed[0]}')
+                del jso['authors_parsed']
+                jso['authors'] = authors
+                jso['year'] = db_data['year']
+                jso['venue'] = db_data['venue']
+                jso['n_citations'] = db_data['n_citations']
+                completed_data.append(json.dumps(jso))
+
+    output_topic_data_file_name = os.path.join(os.environ.get("DATA_DIR"), f"completed_{table_name}.data")
+    with open(output_topic_data_file_name, "w") as leaned_raw_topic_data:
+        leaned_raw_topic_data.write("\n".join(completed_data))
+        print(output_topic_data_file_name + f" saved with {len(completed_data)} completed data")
+
+    # print(len(completed_data))

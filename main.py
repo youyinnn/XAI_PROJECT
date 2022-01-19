@@ -11,7 +11,7 @@ os.environ.setdefault("DATA_DIR", data_dir)
 from data_process.data_extraction.extract_arxiv_data import extract_by_cate as ebc
 from data_process.data_extraction.extract_arxiv_data import extract_by_topic as ebt
 from data_process.data_completion.db import create_table, insert_index, clear_partition
-from data_process.data_completion.filling import fill, status
+from data_process.data_completion.filling import fill, status, export
 from data_process.conf import cates
 
 def main():
@@ -40,7 +40,7 @@ def main():
                         print(cate['name'] +" cate data not exist, extract it first")
                         ebc(cate, os.path.join(data_dir, "arxiv-metadata-oai-snapshot.data"))
 
-                    data_index = ebt(topic, str(cate_data_file))
+                    data_index = ebt(cate['name'], topic, str(cate_data_file))
                     val = input("store those index into database?(type yes if you want): ")
                     if val == 'yes':
                         tbo = create_table(cate['name'], topic['name'])
@@ -65,6 +65,9 @@ def main():
             partition = int(sys.argv[3])
             clear_partition(table_name, partition)
 
+        if (cmd == 'export-data' and argv_len >= 3):
+            table_name = sys.argv[2]
+            export(table_name)
 
 if __name__ == '__main__':
     main()
