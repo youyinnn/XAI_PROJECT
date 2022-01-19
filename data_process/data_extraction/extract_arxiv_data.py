@@ -1,7 +1,9 @@
+from cmath import exp
 import json
 import re
 import time
 import os
+import random
 
 def extract_by_cate(cate, src):
     print("extracting data from " + src + "\nby categories: " + cate['name'])
@@ -27,6 +29,12 @@ def extract_by_cate(cate, src):
                 # del jso["authors_parsed"]
                 del jso["versions"]
                 del jso["license"]
+                if (jso.get('journal-ref') != None):
+                    del jso["journal-ref"]
+                if (jso.get('categories') != None):
+                    del jso["categories"]
+                if (jso.get('update_date') != None):
+                    del jso["update_date"]
 
                 keys = jso.keys()
                 keys_arr = []
@@ -63,7 +71,8 @@ def extract_by_topic(cate_name, topic, src):
     count = 0
     total_count = 0
     data_index_out = []
-    data_out = []
+    # data_out = []
+    matched_jso_data = []
     with open(src) as f:
         data_json = json.load(f)
         flags = (re.I | re.M)
@@ -71,20 +80,47 @@ def extract_by_topic(cate_name, topic, src):
             total_count += 1
             if (re.search(topic['regex'], jso["title"], flags) != None) or (re.search(topic['regex'], jso["abstract"], flags) != None):
                 count += 1
-                data_index_out.append(jso['id'])
-                if (jso.get('journal-ref') != None):
-                    del jso["journal-ref"]
-                if (jso.get('categories') != None):
-                    del jso["categories"]
-                if (jso.get('update_date') != None):
-                    del jso["update_date"]
-                data_out.append(json.dumps(jso))
+                # data_index_out.append(jso['id'])
+                # if (jso.get('journal-ref') != None):
+                #     del jso["journal-ref"]
+                # if (jso.get('categories') != None):
+                #     del jso["categories"]
+                # if (jso.get('update_date') != None):
+                #     del jso["update_date"]
+                # data_out.append(json.dumps(jso))
+                matched_jso_data.append(jso)
 
-    print(f'total {count} indecial out of {total_count}')
+    if (len(matched_jso_data) > 30000):
+        random.shuffle(matched_jso_data)
+        matched_jso_data = matched_jso_data[:30000]
 
-    output_topic_data_file_name = os.path.join(os.environ.get("DATA_DIR"), f"raw_{cate_name}_{topic['name']}.data")
-    with open(output_topic_data_file_name, "w") as leaned_raw_topic_data:
-        leaned_raw_topic_data.write("\n".join(data_out))
-        print(output_topic_data_file_name + " saved")
+    for jso in matched_jso_data:
+        data_index_out.append(jso['id'])
+        # data_out.append(json.dumps(jso))
+
+    print(f'({count}/{total_count}) records are matched the topic with {len(data_index_out)} of them are picked')
+
+    # output_topic_data_file_name = os.path.join(os.environ.get("DATA_DIR"), f"raw_{cate_name}_{topic['name']}.data")
+    # with open(output_topic_data_file_name, "w") as leaned_raw_topic_data:
+    #     leaned_raw_topic_data.write("\n".join(data_out))
+    #     print(output_topic_data_file_name + " saved")
 
     return data_index_out
+
+def topic_count(topic, src):
+    print("searching data from " + src + "\nby topic regx: " + topic['regex'])
+
+    count = 0
+    total_count = 0
+    try:
+        with open(src) as f:
+            data_json = json.load(f)
+            flags = (re.I | re.M)
+            for jso in data_json:
+                total_count += 1
+                if (re.search(topic['regex'], jso["title"], flags) != None) or (re.search(topic['regex'], jso["abstract"], flags) != None):
+                    count += 1
+    except FileNotFoundError:
+        print(f'No file {src} extract it first')
+
+    print(f'total {count} indecial out of {total_count}')

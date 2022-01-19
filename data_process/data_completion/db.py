@@ -35,17 +35,28 @@ def create_table(cate_name, topic_name):
 
 
 def insert_index(tbo, index):
+    with engine.connect() as conn:
+        sql = f'''
+            select count(1) from {tbo}
+        '''
+        result = conn.execute(text(sql))
+    
+        for row in result:
+            if row[0] == 30000:
+                print(f"already have 30000 records indexed in table {tbo}, no insertion is executed")
+                return 
+
     part = partition(index)
 
     p_index = 0
-    for p in part:
-        with engine.connect() as conn:
+    with engine.connect() as conn:
+        for p in part:
             for id in p:
                 sql = f'''
                     insert or ignore into {tbo} (id, partition, filled) values ('{id}', {p_index}, 0)
                 '''
                 conn.execute(text(sql))
-        p_index += 1
+            p_index += 1
     
     print(f'total {len(index)} data were stored')
 
@@ -63,9 +74,11 @@ def partition(index):
 
 def get_incompleted(table_name, partition):
     index = []
+    if partition == -1:
+        partition = '0,1,2'
     with engine.connect() as conn:
         sql = f'''
-            select id from {table_name} where partition = {partition} and filled = 0
+            select id from {table_name} where partition in ({partition}) and filled = 0
         '''
         result = conn.execute(text(sql))
         for row in result:

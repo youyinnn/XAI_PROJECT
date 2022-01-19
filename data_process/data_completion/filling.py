@@ -43,20 +43,26 @@ def fill(table_name, partition):
 
 def status(table_name, partition):
     count = get_status(table_name, partition)
-    estimated_finish_time = time.strftime('%H hrs %M min %S sec', time.gmtime(int(count[0] * 3)))
+    m, s = divmod(int(count[0] * 3), 60)
+    h, m = divmod(m, 60)
+    # estimated_finish_time = time.strftime('%H hrs %M min %S sec', time.gmtime(int(count[0] * 3)))
+    estimated_finish_time = "%d hrs %02d min %02d sec" % (h, m, s)
     print(f'({count[1]}/{count[2]}/{count[0] + count[1] + count[2]}) records are completed in partition {partition}, {estimated_finish_time} left')
 
 
 def export(table_name):
-    data_src = os.path.join(os.environ.get("DATA_DIR"), f"raw_{table_name}.data")
+    cate_name = table_name.split("_")[0]
+    data_src = os.path.join(os.environ.get("DATA_DIR"), f"raw_{cate_name}.data.json")
     # print(data_src)
     all_data = get_all_data(table_name)
     completed_data = []
     with open(data_src) as f:
-        Lines = f.readlines()
-        for line in Lines:
-            line_strip = line.strip()
-            jso = json.loads(line_strip)
+        # Lines = f.readlines()
+        # for line in Lines:
+        #     line_strip = line.strip()
+        #     jso = json.loads(line_strip)
+        data_json = json.load(f)
+        for jso in data_json:
             db_data = all_data.get(jso['id'])
             if db_data != None:
                 authors = []
@@ -68,6 +74,7 @@ def export(table_name):
                 jso['venue'] = db_data['venue']
                 jso['n_citations'] = db_data['n_citations']
                 completed_data.append(json.dumps(jso))
+
 
     output_topic_data_file_name = os.path.join(os.environ.get("DATA_DIR"), f"completed_{table_name}.data")
     with open(output_topic_data_file_name, "w") as leaned_raw_topic_data:

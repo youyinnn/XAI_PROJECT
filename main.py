@@ -10,6 +10,7 @@ os.environ.setdefault("DATA_DIR", data_dir)
 
 from data_process.data_extraction.extract_arxiv_data import extract_by_cate as ebc
 from data_process.data_extraction.extract_arxiv_data import extract_by_topic as ebt
+from data_process.data_extraction.extract_arxiv_data import topic_count
 from data_process.data_completion.db import create_table, insert_index, clear_partition
 from data_process.data_completion.filling import fill, status, export
 from data_process.conf import cates
@@ -67,7 +68,21 @@ def main():
 
         if (cmd == 'export-data' and argv_len >= 3):
             table_name = sys.argv[2]
-            export(table_name)
+            export(table_name)        
+            
+        if (cmd == 'topic-count' and argv_len >= 3):
+            cate_name = sys.argv[2]
+            topic_name = sys.argv[3]
+            cate = cates.get(cate_name)
+            if (cate != None):
+                cate_data_file = os.path.join(data_dir, "raw_" + cate['name'] + ".data.json")
+                topic = cate['topic'].get(topic_name)
+                if (topic != None): 
+                    topic_count(topic, str(cate_data_file))
+                else:
+                    print("No config topic: " + topic_name + " on cate: "+ cate_name)
+            else:
+                print("No config cate for: " + cate_name)
 
 if __name__ == '__main__':
     main()
