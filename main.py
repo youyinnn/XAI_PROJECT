@@ -10,7 +10,7 @@ os.environ.setdefault("DATA_DIR", data_dir)
 
 from data_process.data_extraction.extract_arxiv_data import extract_by_cate as ebc
 from data_process.data_extraction.extract_arxiv_data import extract_by_topic as ebt
-from data_process.data_completion.db import create_table, insert_index
+from data_process.data_completion.db import create_table, insert_index, clear_partition
 from data_process.data_completion.filling import fill, status
 from data_process.conf import cates
 
@@ -59,6 +59,11 @@ def main():
             table_name = sys.argv[2]
             partition = int(sys.argv[3])
             status(table_name, partition)
+
+        if (cmd == 'clear-part' and argv_len >= 4):
+            table_name = sys.argv[2]
+            partition = int(sys.argv[3])
+            clear_partition(table_name, partition)
 
 
 if __name__ == '__main__':

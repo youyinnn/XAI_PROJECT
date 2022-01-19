@@ -107,3 +107,35 @@ def error_record(table_name, id):
             where id = '{id}'
         '''
         conn.execute(text(sql))
+
+
+def fill_data(table_name, data, id):
+    with engine.connect() as conn:
+        sql = f'''
+            update {table_name}
+            set year = :year, venue = :venue, n_citations = :n_citations, filled = 1 
+            where id = :id
+        '''
+        conn.execute(
+            text(sql), 
+            {
+                'id': id,
+                'year': data['year'],
+                'venue': data['venue'],
+                'n_citations': data['citationCount']
+            }
+        )
+
+def clear_partition(table_name, keeping_partition):
+    with engine.connect() as conn:
+        sql = f'''
+            update {table_name}
+            set year = null, venue = null, n_citations = null, filled = 0 
+            where partition <> :keeping_partition
+        '''
+        conn.execute(
+            text(sql), 
+            {
+                'keeping_partition': keeping_partition,
+            }
+        )

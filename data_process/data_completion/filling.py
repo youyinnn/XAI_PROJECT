@@ -1,5 +1,5 @@
 import requests, json, time, sys
-from data_process.data_completion.db import get_incompleted, engine, get_status, error_record
+from data_process.data_completion.db import get_incompleted, get_status, fill_data, error_record
 from sqlalchemy import text
 
 # fill one record every 3 seconds
@@ -30,30 +30,22 @@ def fill(table_name, partition):
                 error_record(table_name, id)
             else:
                 # print(f'api worked filling {id} and sleep 3.1 seconds')
-                with engine.connect() as conn:
-                    sql = f'''
-                        update {table_name}
-                        set year = :year, venue = :venue, n_citations = :n_citations, filled = 1 
-                        where id = :id
-                    '''
-                    conn.execute(
-                        text(sql), 
-                        {
-                            'id': id,
-                            'year': data['year'],
-                            'venue': data['venue'],
-                            'n_citations': data['citationCount']
-                        }
-                    )
-                    time.sleep(3.1)
+                fill_data(table_name, data, id)
+                time.sleep(3.1)
         except KeyboardInterrupt:
             print(f"KeyboardInterrupt on id {id}")
             sys.exit()
         except:
             print(f"An exception occurred on id {id}")
             error_record(table_name, id)
+            time.sleep(3.1)
+        # break
 
 def status(table_name, partition):
     count = get_status(table_name, partition)
     estimated_finish_time = time.strftime('%H hrs %M min %S sec', time.gmtime(int(count[0] * 3)))
     print(f'({count[1]}/{count[2]}/{count[0] + count[1] + count[2]}) records are completed in partition {partition}, {estimated_finish_time} left')
+
+
+def export(table_name):
+    print()
