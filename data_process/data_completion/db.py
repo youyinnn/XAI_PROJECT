@@ -72,3 +72,38 @@ def get_incompleted(table_name, partition):
             index.append(row.id)
 
     return index
+
+def get_status(table_name, partition):
+    index = []
+    with engine.connect() as conn:
+        sql = f'''
+            select count(1) as a from {table_name} where partition = {partition} and filled = 0
+        '''
+        result = conn.execute(text(sql))
+        for row in result:
+            index.append(row[0])
+
+        sql = f'''
+            select count(1) as a from {table_name} where partition = {partition} and filled = 1
+        '''
+        result = conn.execute(text(sql))
+        for row in result:
+            index.append(row[0])
+
+        sql = f'''
+            select count(1) as a from {table_name} where partition = {partition} and filled = 2
+        '''
+        result = conn.execute(text(sql))
+        for row in result:
+            index.append(row[0])
+
+    return index
+
+def error_record(table_name, id):
+    with engine.connect() as conn:
+        sql = f'''
+            update {table_name} 
+            set filled = 2
+            where id = '{id}'
+        '''
+        conn.execute(text(sql))
