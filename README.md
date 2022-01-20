@@ -150,3 +150,21 @@ Go into ./masking
 python feature_masking.py 
 ```
 Output: json files under ./masking
+
+
+### S2 Scoring
+
+Go to this Repo https://github.com/DingLi23/s2search
+
+Install requirments, Run the following to test if you have the correct Model.
+
+```bash
+python s2search_example.py 
+```
+
+Change the root_dir to your local filepath of ./masking
+
+```bash
+python s2search_score.py 
+```
+The data by numpy file are generated in s2search file folder.
