@@ -137,3 +137,16 @@ python main.py export-data cs_ml
 
 1. `data_process/data/raw_cs.data.json`
 2. `data_process/data/completed_data.db` with completed data in table `cs_ml`
+
+### Feature Masking
+
+Input: completed_cs_ml.data
+
+Change the example_src in feature_masking.py to the input file.
+
+Go into ./masking
+
+```bash
+python feature_masking.py 
+```
+Output: json files under ./masking
