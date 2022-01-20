@@ -8,3 +8,5 @@ arxiv-metadata-oai-snapshot.data
 .DS_Store
 
 __pycache__
+
+s2search_data/

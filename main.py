@@ -15,6 +15,7 @@ from data_process.data_completion.db import create_table, insert_index, clear_pa
 from data_process.data_completion.filling import fill, status, export
 from data_process.conf import cates
 
+
 def main():
     argv_len = len(sys.argv)
     if argv_len > 1:
@@ -35,10 +36,10 @@ def main():
                 cate_data_file = os.path.join(data_dir, "raw_" + cate['name'] + ".data.json")
                 # ebc(cate, os.path.join(data_dir, "arxiv-metadata-oai-snapshot.data"))
                 topic = cate['topic'].get(topic_name)
-                if (topic != None): 
+                if (topic != None):
                     # print(topic)
                     if not os.path.isfile(str(cate_data_file)):
-                        print(cate['name'] +" cate data not exist, extract it first")
+                        print(cate['name'] + " cate data not exist, extract it first")
                         ebc(cate, os.path.join(data_dir, "arxiv-metadata-oai-snapshot.data"))
 
                     data_index = ebt(cate['name'], topic, str(cate_data_file))
@@ -47,10 +48,10 @@ def main():
                         tbo = create_table(cate['name'], topic['name'])
                         insert_index(tbo, data_index)
                 else:
-                    print("No config topic: " + topic_name + " on cate: "+ cate_name)
+                    print("No config topic: " + topic_name + " on cate: " + cate_name)
             else:
                 print("No config cate for: " + cate_name)
-        
+
         if (cmd == 'fill-data' and argv_len >= 4):
             table_name = sys.argv[2]
             partition = int(sys.argv[3])
