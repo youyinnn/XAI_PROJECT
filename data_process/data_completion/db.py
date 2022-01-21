@@ -1,5 +1,4 @@
 import os
-from tokenize import Number
 from sqlalchemy import create_engine
 from sqlalchemy import Table, Column, Integer, String
 # from data_process.data_completion.base import Base

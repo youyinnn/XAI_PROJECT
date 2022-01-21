@@ -15,6 +15,8 @@ from data_process.data_completion.db import create_table, create_initial_records
 from data_process.data_completion.filling import fill, status, export, merge_from_tmp_db
 from data_process.conf import cates
 
+from data_process.data_completion.db_s2 import partition_check_init
+from data_process.data_extraction.extract_s2_data import extract, export as s2_export
 
 def main():
     argv_len = len(sys.argv)
@@ -88,6 +90,15 @@ def main():
                     print("No config topic: " + topic_name + " on cate: "+ cate_name)
             else:
                 print("No config cate for: " + cate_name)
+
+        if (cmd == 'init-s2-database'):
+            partition_check_init()        
+        
+        if (cmd == 'extract-s2-cs-data'):
+            extract()
+
+        if (cmd == 'export-s2-cs-data'):
+            s2_export()
 
 if __name__ == '__main__':
     main()

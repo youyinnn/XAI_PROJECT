@@ -7,6 +7,9 @@ arxiv-metadata-oai-snapshot.data
 *.db-journal
 *.tmp.db
 
+s2-corpus*
+*_s2.db
+
 .DS_Store
 
 __pycache__
