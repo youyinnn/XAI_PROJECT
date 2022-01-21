@@ -12,7 +12,7 @@ from data_process.data_extraction.extract_arxiv_data import extract_by_cate as e
 from data_process.data_extraction.extract_arxiv_data import extract_by_topic as ebt
 from data_process.data_extraction.extract_arxiv_data import topic_count
 from data_process.data_completion.db import create_table, create_initial_records, clear_partition
-from data_process.data_completion.filling import fill, status, export
+from data_process.data_completion.filling import fill, status, export, merge_from_tmp_db
 from data_process.conf import cates
 
 
@@ -56,6 +56,10 @@ def main():
             table_name = sys.argv[2]
             partition = int(sys.argv[3])
             fill(table_name, partition)
+
+        if (cmd == 'merge-data' and argv_len >= 3):
+            table_name = sys.argv[2]
+            merge_from_tmp_db(table_name)   
 
         if (cmd == 'fill-data-status' and argv_len >= 4):
             table_name = sys.argv[2]

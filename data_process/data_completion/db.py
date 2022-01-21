@@ -125,54 +125,57 @@ def get_incompleted(table_name, partition):
     return tmp_engine, incompleted_id_p
 
 def get_filling_status(table_name, partition):
-    filled = 0
-    unfilled = 0
-    error = 0
+    
     total = 0    
     if partition == -1:
         partition = '0,1,2'
+    filled_records = {}
+    unfilled_records = {}
+    error_records = {}
     with engine.connect() as conn:
         sql = f'''
-            select count(1) as a from {table_name} where partition in ({partition}) and filled = 0
+            select id from {table_name} where partition in ({partition}) and filled = 0
         '''
         result = conn.execute(text(sql))
         for row in result:
-            unfilled += row[0]
-            total += row[0]
+            unfilled_records[row[0]] = ''
+            total += 1
 
         sql = f'''
-            select count(1) as a from {table_name} where partition in ({partition}) and filled = 1
+            select id from {table_name} where partition in ({partition}) and filled = 1
         '''
         result = conn.execute(text(sql))
         for row in result:
-            filled += row[0]
-            total += row[0]
+            filled_records[row[0]] = ''
+            total += 1
 
         sql = f'''
-            select count(1) as a from {table_name} where partition in ({partition}) and filled = 2
+            select id from {table_name} where partition in ({partition}) and filled = 2
         '''
         result = conn.execute(text(sql))
         for row in result:
-            error += row[0]
-            total += row[0]
+            error_records[row[0]] = ''
+            total += 1
 
     tmp_engine = get_temp_db_engine(table_name)
     with tmp_engine.connect() as conn:
         sql = f'''
-            select count(1) as a from {table_name} where partition in ({partition}) and filled = 1
+            select id from {table_name} where partition in ({partition}) and filled = 1
         '''
         result = conn.execute(text(sql))
         for row in result:
-            filled += row[0]
-            unfilled -= row[0]
+            filled_records[row[0]] = ''
 
         sql = f'''
-            select count(1) as a from {table_name} where partition in ({partition}) and filled = 2
+            select id from {table_name} where partition in ({partition}) and filled = 2
         '''
         result = conn.execute(text(sql))
         for row in result:
-            error += row[0]
-            unfilled -= row[0]
+            error_records[row[0]] = ''
+
+    filled = len(filled_records.keys())
+    unfilled = len(unfilled_records.keys())
+    error = len(error_records.keys())
 
     return filled, unfilled, error, total
 
@@ -230,3 +233,41 @@ def get_all_data(table_name):
             data[row.id] = row
 
     return data
+
+def get_all_data_from_tmp(table_name):
+    data = {}
+    tmp_engine = get_temp_db_engine(table_name)
+    with tmp_engine.connect() as conn:
+        sql = f'''
+            select * from {table_name} where filled in (0, 1, 2)
+        '''
+        result = conn.execute(text(sql))
+        for row in result:
+            data[row.id] = row
+
+    return data
+
+def merge_data_from_temp(table_name, tmp_data):
+    count = 0
+    with engine.connect() as conn:
+        for d in tmp_data:
+            tmp_records= tmp_data[d]
+            if tmp_records[5] != 0:
+                count += 1
+            sql = f'''
+                update {table_name}
+                set venue = :venue, year = :year, n_citations = :n_citations, filled = :filled
+                where id = :id and filled is 0
+            '''
+            conn.execute(text(sql),
+                {
+                    'id': d,
+                    'year': tmp_records[2],
+                    'venue': tmp_records[1],
+                    'n_citations': tmp_records[3],
+                    'filled': tmp_records[5]
+                }
+            )
+            # print(d)
+            # break
+    print(f'{count} records are merged into {table_name}')

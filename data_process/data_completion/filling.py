@@ -1,5 +1,5 @@
 import requests, json, time, sys, os
-from data_process.data_completion.db import get_incompleted, get_filling_status, fill_data, mark_as_error_record,get_all_data
+from data_process.data_completion.db import get_incompleted, get_filling_status, fill_data, mark_as_error_record,get_all_data, get_all_data_from_tmp, merge_data_from_temp
 import datetime
 
 # fill one record every 3 seconds
@@ -51,6 +51,9 @@ def status(table_name, partition):
     time_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f'[{time_str}] ({filled}/{error}/{total}) records are completed in partition {partition}, {estimated_finish_time} left')
 
+def merge_from_tmp_db(table_name):
+    tmp_data = get_all_data_from_tmp(table_name)
+    merge_data_from_temp(table_name, tmp_data)
 
 def export(table_name):
     cate_name = table_name.split("_")[0]
