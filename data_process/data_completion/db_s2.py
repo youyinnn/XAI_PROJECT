@@ -5,6 +5,7 @@ from sqlalchemy import Table, Column, Integer, String, BLOB
 # from data_process.data_completion.base import Base
 from sqlalchemy import MetaData
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 metadata_obj = MetaData()
 data_path = os.environ.get("DATA_DIR")
@@ -73,21 +74,42 @@ def get_unchecked_partition():
 
 def insert_data(dataset, partition):
     # print(dataset[:1])
-    with engine.connect() as conn:
-        sql = f'''
-            INSERT or ignore INTO cs (s2_id, title, abstract, authors, venue, year, n_citations, partition) 
-            VALUES (:s2_id, :title, :abstract, :authors, :venue, :year, :n_citations, '{partition}')
-        '''
-        conn.execute(text(sql), dataset)
+    # dataset = dataset[:1]
+    with Session(engine) as session:
+        session.begin()
+        try:
+            # session.add(some_object)
+            # session.add(some_other_object)
+            sql = f'''
+                INSERT or ignore INTO cs (s2_id, title, abstract, authors, venue, year, n_citations, partition) 
+                VALUES (:s2_id, :title, :abstract, :authors, :venue, :year, :n_citations, '{partition}')
+            '''
+            session.execute(text(sql), dataset)
+        except:
+            session.rollback()
+            raise
+        else:
+            session.commit()
+    # with engine.connect() as conn:
+        # conn.execute(text(sql), dataset)
 
 def check_partition(partition):
-    with engine.connect() as conn:
-        sql = f'''
-            update partition_check
-            set is_checked = 1
-            where partition is '{partition}'
-        '''
-        conn.execute(text(sql))
+    with Session(engine) as session:
+        session.begin()
+        try:
+            # session.add(some_object)
+            # session.add(some_other_object)            
+            sql = f'''
+                update partition_check
+                set is_checked = 1
+                where partition is '{partition}'
+            '''
+            session.execute(text(sql))
+        except:
+            session.rollback()
+            raise
+        else:
+            session.commit()
 
 def get_data():
     data = []

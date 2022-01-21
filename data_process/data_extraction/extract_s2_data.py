@@ -59,7 +59,7 @@ def extract():
                     del jso['entities']
                     # del jso['fieldsOfStudy']
 
-                    if jso['venue'] != '' and jso['abstract'] != '':
+                    if jso['venue'] != '' and jso['abstract'] != '' and jso['year'] != None:
                         jso['title'] = zlib.compress(str.encode(jso['title'], encoding='utf-8'), 9)
                         jso['abstract'] = zlib.compress(str.encode(jso['abstract'], encoding='utf-8'), 9)
                         jso['authors'] = zlib.compress(str.encode(jso['authors'], encoding='utf-8'), 9)
