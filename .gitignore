@@ -4,6 +4,8 @@ arxiv-metadata-oai-snapshot.data
 *.data.json
 *.data
 *.backup
+*.db-journal
+*.tmp.db
 
 .DS_Store
 

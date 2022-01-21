@@ -1,16 +1,17 @@
 import requests, json, time, sys, os
-from data_process.data_completion.db import get_incompleted, get_status, fill_data, error_record,get_all_data
-from sqlalchemy import text
+from data_process.data_completion.db import get_incompleted, get_filling_status, fill_data, mark_as_error_record,get_all_data
+import datetime
 
 # fill one record every 3 seconds
 def fill(table_name, partition):
     print(f'filling data for table {table_name} from partition {partition}')
     status(table_name, partition)
 
-    index = get_incompleted(table_name, partition)
+    # return 
+    tmp_engine, index_partition = get_incompleted(table_name, partition)
 
     count = 0
-    for id in index:
+    for id_p in index_partition:
         # print(id)
         count += 1
 
@@ -18,6 +19,7 @@ def fill(table_name, partition):
         if (count % 50 == 0):
             status(table_name, partition)
 
+        id = id_p['id']
         # try filling
         try:
             r = requests.get(f'https://api.semanticscholar.org/graph/v1/paper/URL:https://arxiv.org/abs/{id}?fields=venue,year,citationCount')
@@ -27,27 +29,27 @@ def fill(table_name, partition):
                 time.sleep(60)
             elif data.get('error') != None:
                 print(data)
-                error_record(table_name, id)
+                mark_as_error_record(table_name, id_p, tmp_engine)
             else:
                 # print(f'api worked filling {id} and sleep 3.1 seconds')
-                fill_data(table_name, data, id)
+                fill_data(table_name, data, id_p, tmp_engine)
                 time.sleep(3.1)
         except KeyboardInterrupt:
             print(f"KeyboardInterrupt on id {id}")
             sys.exit()
         except:
             print(f"An exception occurred on id {id}")
-            error_record(table_name, id)
+            mark_as_error_record(table_name, id_p, tmp_engine)
             time.sleep(3.1)
-        # break
 
 def status(table_name, partition):
-    count = get_status(table_name, partition)
-    m, s = divmod(int(count[0] * 3), 60)
+    filled, unfilled, error, total = get_filling_status(table_name, partition)
+    m, s = divmod(int(unfilled * 3), 60)
     h, m = divmod(m, 60)
     # estimated_finish_time = time.strftime('%H hrs %M min %S sec', time.gmtime(int(count[0] * 3)))
     estimated_finish_time = "%d hrs %02d min %02d sec" % (h, m, s)
-    print(f'({count[1]}/{count[2]}/{count[0] + count[1] + count[2]}) records are completed in partition {partition}, {estimated_finish_time} left')
+    time_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f'[{time_str}] ({filled}/{error}/{total}) records are completed in partition {partition}, {estimated_finish_time} left')
 
 
 def export(table_name):

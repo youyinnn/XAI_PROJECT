@@ -6,12 +6,12 @@ from sqlalchemy import Table, Column, Integer, String
 from sqlalchemy import MetaData
 from sqlalchemy import text
 import random
-import math
 
 metadata_obj = MetaData()
 data_path = os.environ.get("DATA_DIR")
 db_location = os.path.join(data_path, "completed_data.db")
 engine = create_engine("sqlite+pysqlite:///" + str(db_location))
+tmp_engine_map = {}
 
 # CREATE TABLE cs (
 #     "id"	varchar,
@@ -33,8 +33,27 @@ def create_table(cate_name, topic_name):
     metadata_obj.create_all(engine)
     return tbo
 
+def get_temp_db_engine(table_name):
+    existed_tmp_engine = tmp_engine_map.get(table_name)
+    if existed_tmp_engine != None:
+        return existed_tmp_engine
+    tmp_db_location = os.path.join(data_path, f"{table_name}.tmp.db")
+    tmp_engine = create_engine("sqlite+pysqlite:///" + str(tmp_db_location))
+    Table(
+        table_name,
+        metadata_obj,
+        Column('id', String, primary_key=True),
+        Column('venue', String),
+        Column('year', Integer),
+        Column('n_citations', Integer),
+        Column('partition', Integer, default=0),
+        Column('filled', Integer, default=0)
+    )
+    metadata_obj.create_all(tmp_engine)
+    tmp_engine_map[table_name] = tmp_engine
+    return tmp_engine
 
-def insert_index(tbo, index):
+def create_initial_records(tbo, index):
     with engine.connect() as conn:
         sql = f'''
             select count(1) from {tbo}
@@ -46,7 +65,7 @@ def insert_index(tbo, index):
                 print(f"already have 30000 records indexed in table {tbo}, no insertion is executed")
                 return 
 
-    part = partition(index)
+    part = record_partitioning(index)
 
     p_index = 0
     with engine.connect() as conn:
@@ -60,7 +79,7 @@ def insert_index(tbo, index):
     
     print(f'total {len(index)} data were stored')
 
-def partition(index): 
+def record_partitioning(index): 
     individual_duty = int((len(index) / 3))
     random.shuffle(index)
 
@@ -78,16 +97,38 @@ def get_incompleted(table_name, partition):
         partition = '0,1,2'
     with engine.connect() as conn:
         sql = f'''
-            select id from {table_name} where partition in ({partition}) and filled = 0
+            select id,partition from {table_name} where partition in ({partition}) and filled = 0
         '''
         result = conn.execute(text(sql))
         for row in result:
-            index.append(row.id)
+            index.append({
+                'id': row.id,
+                'partition': row.partition
+            })
 
-    return index
+    tmp_engine = get_temp_db_engine(table_name)
+    filled_in_tmp = {}
+    with tmp_engine.connect() as conn:
+        sql = f'''
+            select id from {table_name} where partition in ({partition}) and filled is not 0
+        '''
+        result = conn.execute(text(sql))
+        for row in result:
+            filled_in_tmp[row.id] = ''
 
-def get_status(table_name, partition):
-    index = []
+    incompleted_id_p = []
+    for idp in index:
+        id =  idp['id']
+        if filled_in_tmp.get(id) == None:
+            incompleted_id_p.append(idp)
+
+    return tmp_engine, incompleted_id_p
+
+def get_filling_status(table_name, partition):
+    filled = 0
+    unfilled = 0
+    error = 0
+    total = 0    
     if partition == -1:
         partition = '0,1,2'
     with engine.connect() as conn:
@@ -96,45 +137,68 @@ def get_status(table_name, partition):
         '''
         result = conn.execute(text(sql))
         for row in result:
-            index.append(row[0])
+            unfilled += row[0]
+            total += row[0]
 
         sql = f'''
             select count(1) as a from {table_name} where partition in ({partition}) and filled = 1
         '''
         result = conn.execute(text(sql))
         for row in result:
-            index.append(row[0])
+            filled += row[0]
+            total += row[0]
 
         sql = f'''
             select count(1) as a from {table_name} where partition in ({partition}) and filled = 2
         '''
         result = conn.execute(text(sql))
         for row in result:
-            index.append(row[0])
+            error += row[0]
+            total += row[0]
 
-    return index
-
-def error_record(table_name, id):
-    with engine.connect() as conn:
+    tmp_engine = get_temp_db_engine(table_name)
+    with tmp_engine.connect() as conn:
         sql = f'''
-            update {table_name} 
-            set filled = 2
-            where id = '{id}'
+            select count(1) as a from {table_name} where partition in ({partition}) and filled = 1
+        '''
+        result = conn.execute(text(sql))
+        for row in result:
+            filled += row[0]
+            unfilled -= row[0]
+
+        sql = f'''
+            select count(1) as a from {table_name} where partition in ({partition}) and filled = 2
+        '''
+        result = conn.execute(text(sql))
+        for row in result:
+            error += row[0]
+            unfilled -= row[0]
+
+    return filled, unfilled, error, total
+
+def mark_as_error_record(table_name, id_p, eng):
+    with eng.connect() as conn:
+        # sql = f'''
+        #     update {table_name} 
+        #     set filled = 2
+        #     where id = '{id}'
+        # '''        
+        sql = f'''
+            insert into {table_name} (id, partition, filled)
+            values ('{id_p['id']}', {id_p['partition']}, 2)
         '''
         conn.execute(text(sql))
 
-
-def fill_data(table_name, data, id):
-    with engine.connect() as conn:
+def fill_data(table_name, data, id_p, eng):
+    with eng.connect() as conn:
         sql = f'''
-            update {table_name}
-            set year = :year, venue = :venue, n_citations = :n_citations, filled = 1 
-            where id = :id
+            insert into {table_name} (id, year, venue, n_citations, partition, filled)
+            values ('{id_p['id']}', :year, :venue, :n_citations, {id_p['partition']}, 1)
         '''
         conn.execute(
             text(sql), 
             {
-                'id': id,
+                # 'id': id,
                 'year': data['year'],
                 'venue': data['venue'],
                 'n_citations': data['citationCount']

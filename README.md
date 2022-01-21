@@ -1,3 +1,4 @@
+## Data Processing
 ### Data extraction
 
 Extract data from the original data set: https://www.kaggle.com/Cornell-University/arxiv
@@ -138,6 +139,7 @@ python main.py export-data cs_ml
 1. `data_process/data/raw_cs.data.json`
 2. `data_process/data/completed_data.db` with completed data in table `cs_ml`
 
+## Feature masking
 ### Feature Masking
 
 Input: completed_cs_ml.data

@@ -11,7 +11,7 @@ os.environ.setdefault("DATA_DIR", data_dir)
 from data_process.data_extraction.extract_arxiv_data import extract_by_cate as ebc
 from data_process.data_extraction.extract_arxiv_data import extract_by_topic as ebt
 from data_process.data_extraction.extract_arxiv_data import topic_count
-from data_process.data_completion.db import create_table, insert_index, clear_partition
+from data_process.data_completion.db import create_table, create_initial_records, clear_partition
 from data_process.data_completion.filling import fill, status, export
 from data_process.conf import cates
 
@@ -46,7 +46,7 @@ def main():
                     val = input("store those index into database?(type yes if you want): ")
                     if val == 'yes':
                         tbo = create_table(cate['name'], topic['name'])
-                        insert_index(tbo, data_index)
+                        create_initial_records(tbo, data_index)
                 else:
                     print("No config topic: " + topic_name + " on cate: " + cate_name)
             else:
