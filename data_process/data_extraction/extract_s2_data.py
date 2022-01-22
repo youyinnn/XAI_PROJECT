@@ -1,12 +1,15 @@
 from data_process.data_completion.db_s2 import get_unchecked_partition, insert_data, check_partition,get_data
+from data_process.data_completion.db_s2 import get_data_count, get_data_with_ids
 import urllib.request
-import shutil, os, gzip,json,zlib, time
+import shutil, os, gzip,json,zlib, time, random
 
 def extract():
     unchecked_partition = get_unchecked_partition()
     # print(unchecked_partition)
     total_sec = 0.0
     count = 0
+    if len(unchecked_partition) == 0:
+        print('all s2 data partitions have been checked and extracted')
     for partition in unchecked_partition:
         count += 1
         gz_name = f'{partition}.gz'
@@ -77,6 +80,40 @@ def extract():
         print('\n')
         # break
 
-def export():
-    data = get_data()
-    print(json.dumps(data[0]))
+def export(start, amount):
+    data = get_data(start, amount)
+    data_out = []
+    for d in data:
+        d['authors'] = json.loads(d['authors'])
+        data_out.append(json.dumps(d))
+
+    output_s2_data_file_name = os.path.join(os.environ.get("DATA_DIR"), 's2_sample', f"completed_s2_{int(start) + 1}_to_{int(start) + int(amount)}.data")
+    with open(output_s2_data_file_name, "w") as leaned_raw_topic_data:
+        leaned_raw_topic_data.write("\n".join(data_out))
+        print(output_s2_data_file_name + f" saved with {len(data_out)} completed data")
+
+# this will take 600M more memories
+def export_rand():
+    record_count = get_data_count()
+    id_arr = []
+    i = 1
+    # this will take 300M memories
+    while (i <= record_count):
+        id_arr.append(str(i))
+        i += 1
+
+    random.shuffle(id_arr)
+
+    rand_ids = id_arr[:30000]
+    data = get_data_with_ids(rand_ids)
+    data_out = []
+    for d in data:
+        d['authors'] = json.loads(d['authors'])
+        data_out.append(json.dumps(d))
+
+    rand_sequence = hex(zlib.crc32(str(time.time()).encode('utf-8')))
+    output_s2_data_file_name = os.path.join(os.environ.get("DATA_DIR"), 's2_sample', f"completed_s2_rand.{rand_sequence}.data")
+    with open(output_s2_data_file_name, "w") as leaned_raw_topic_data:
+        leaned_raw_topic_data.write("\n".join(data_out))
+        print(output_s2_data_file_name + f" saved with {len(data_out)} completed data")
+    

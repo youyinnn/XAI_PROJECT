@@ -1,11 +1,17 @@
 ## Data Processing
-### Data extraction
+
+### Arxiv data source
+
+<details>
+ <summary>Extracting data from <strong>Arxiv</strong> dataset and semantic api(outdated !!!)</summary>
+
+#### Data extraction
 
 Extract data from the original data set: https://www.kaggle.com/Cornell-University/arxiv
 
 Put the data in: `data_process/data/arxiv-metadata-oai-snapshot.data`.
 
-#### Extract by arxiv top categories - cate level data
+##### Extract by arxiv top categories - cate level data
 
 Cmd format:
 
@@ -35,7 +41,7 @@ python main.py extract-cate cs
 
 This will match the regex on `categories` property and extract data which contain 'cs' on their categories properties to location: `data_process/data/raw_cs.data.json`
 
-#### Extract by topic from categories data - topic level data
+##### Extract by topic from categories data - topic level data
 
 Cmd format:
 
@@ -83,7 +89,7 @@ store those index into database?(type yes if you want):
 
 If typing yes, a sqlite database will be created at `data_process/data/completed_data.db`, and a table named `cs_ml` will be also created with the matched records inserted.
 
-### Data completion
+#### Data completion
 
 Cmd format:
 
@@ -107,7 +113,7 @@ This will fill the un-filled data from partition 0 of the table `cs_ml`.
 
 **If you want to fill all partitions just use -1 partition.**
 
-#### Filling status check
+##### Filling status check
 
 ```bash
 python main.py fill-data-status [table_name] [partition_number]
@@ -120,7 +126,7 @@ e.g.
 > (8/0/30000) records are completed in partition -1, 24 hrs 59 min 36 sec left
 ```
 
-### How to get completed data
+#### How to get completed data
 
 Cmd format:
 
@@ -139,7 +145,50 @@ python main.py export-data cs_ml
 1. `data_process/data/raw_cs.data.json`
 2. `data_process/data/completed_data.db` with completed data in table `cs_ml`
 
-## Feature masking
+</details>
+
+### S2AG data source
+
+#### Download the pre-processed s2ag data
+
+Get the pre-processed s2 data from: [Google Drive](https://drive.google.com/file/d/1mIK7cVGGVJFCv5Cied-X_Z12Uv-lmFk2/view?usp=sharing)
+
+Put the `completed_cs_data_s2.db` file in `data_process/data/` .
+
+Check the amount of data with:
+
+```bash
+python main.py s2-cs-data-count
+```
+
+#### Extract the sample data
+
+Then you can extract the data with:
+
+```bash
+python main.py export-s2-cs-data [start_number] [amount]
+```
+
+or
+
+```bash
+python main.py export-s2-cs-data-rand
+```
+
+The first command will extract the `amount` of data started from `start_number` and store the data into `data_process/data/completed_s2_{start_number + 1}_to_{start_number + amount}.data`.
+
+E.g:
+
+```bash
+python main.py export-s2-cs-data 1 30
+```
+
+will get the `data_process/data/s2_sample/completed_s2_1_to_30.data` file.
+
+The second command will extract 30000 randomly shuffled data from all the data(out of 6.6 million data).
+
+## Feature Masking
+
 ### Feature Masking
 
 Input: completed_cs_ml.data
@@ -149,10 +198,10 @@ Change the example_src in feature_masking.py to the input file.
 Go into ./masking
 
 ```bash
-python feature_masking.py 
+python feature_masking.py
 ```
-Output: json files under ./masking
 
+Output: json files under ./masking
 
 ### S2 Scoring
 
@@ -161,12 +210,13 @@ Go to this Repo https://github.com/DingLi23/s2search
 Install requirments, Run the following to test if you have the correct Model.
 
 ```bash
-python s2search_example.py 
+python s2search_example.py
 ```
 
 Change the root_dir to your local filepath of ./masking
 
 ```bash
-python s2search_score.py 
+python s2search_score.py
 ```
+
 The data by numpy file are generated in s2search file folder.

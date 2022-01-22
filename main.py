@@ -15,8 +15,8 @@ from data_process.data_completion.db import create_table, create_initial_records
 from data_process.data_completion.filling import fill, status, export, merge_from_tmp_db
 from data_process.conf import cates
 
-from data_process.data_completion.db_s2 import partition_check_init
-from data_process.data_extraction.extract_s2_data import extract, export as s2_export
+from data_process.data_completion.db_s2 import partition_check_init,get_data_count
+from data_process.data_extraction.extract_s2_data import extract, export as s2_export, export_rand as s2_export_rand
 
 def main():
     argv_len = len(sys.argv)
@@ -97,8 +97,18 @@ def main():
         if (cmd == 'extract-s2-cs-data'):
             extract()
 
+        if (cmd == 's2-cs-data-count'):
+            print(get_data_count())
+
         if (cmd == 'export-s2-cs-data'):
-            s2_export()
+            start, amount = None, None
+            if argv_len >= 4:
+                start = int(sys.argv[2]) - 1
+                amount = sys.argv[3]
+            s2_export(start, amount)
+
+        if (cmd == 'export-s2-cs-data-rand'):
+            s2_export_rand()
 
 if __name__ == '__main__':
     main()

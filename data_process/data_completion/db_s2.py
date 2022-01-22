@@ -1,5 +1,4 @@
-from curses import echo
-import os, zlib
+import os, zlib, time
 from sqlalchemy import create_engine
 from sqlalchemy import Table, Column, Integer, String, BLOB
 # from data_process.data_completion.base import Base
@@ -16,8 +15,8 @@ def create_table():
     Table(
         'cs',
         metadata_obj,
-        # Column('id', Integer, primary_key=True),
-        Column('s2_id', String, primary_key=True),
+        Column('id', Integer, primary_key=True),
+        Column('s2_id', String),
         Column('title', BLOB),
         Column('abstract', BLOB),
         Column('authors', BLOB),
@@ -111,20 +110,51 @@ def check_partition(partition):
         else:
             session.commit()
 
-def get_data():
+def get_data(start, amount):
     data = []
     with engine.connect() as conn:
         sql = f'''
-            select * from cs
+            select * from cs limit {start}, {amount}
         '''
         rs = conn.execute(text(sql))
         for row in rs:
             data.append({
-                'title': zlib.decompress(row[1]).decode('utf-8'),
-                'abstract': zlib.decompress(row[2]).decode('utf-8'),
-                'venue': row[4],
-                'authors': zlib.decompress(row[3]).decode('utf-8'),
-                'year': row[5],
-                'n_citations': row[6],
+                'id': row[0],
+                's2_id': row[1],
+                'title': zlib.decompress(row[2]).decode('utf-8'),
+                'abstract': zlib.decompress(row[3]).decode('utf-8'),
+                'venue': row[5],
+                'authors': zlib.decompress(row[4]).decode('utf-8'),
+                'year': row[6],
+                'n_citations': row[7],
             })
     return data
+
+def get_data_with_ids(ids):
+    data = []
+    with engine.connect() as conn:
+        sql = f'''
+            select * from cs where id in ({','.join(ids)})
+        '''
+        rs = conn.execute(text(sql))
+        for row in rs:
+            data.append({
+                'id': row[0],
+                's2_id': row[1],
+                'title': zlib.decompress(row[2]).decode('utf-8'),
+                'abstract': zlib.decompress(row[3]).decode('utf-8'),
+                'venue': row[5],
+                'authors': zlib.decompress(row[4]).decode('utf-8'),
+                'year': row[6],
+                'n_citations': row[7],
+            })
+    return data
+
+def get_data_count():
+    with engine.connect() as conn:
+        sql = f'''
+            select count(1) from cs
+        '''
+        rs = conn.execute(text(sql))
+        for row in rs:
+            return row[0]
