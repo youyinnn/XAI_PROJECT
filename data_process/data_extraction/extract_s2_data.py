@@ -1,7 +1,11 @@
 from data_process.data_completion.db_s2 import get_unchecked_partition, insert_data, check_partition,get_data
 from data_process.data_completion.db_s2 import get_data_count, get_data_with_ids
 import urllib.request
-import shutil, os, gzip,json,zlib, time, random
+import shutil, os, gzip,json,zlib, time, random, multiprocessing,re
+from multiprocessing import Pool
+from functools import reduce
+
+from data_process.data_completion.db_s2 import get_all_titles_by_partitions, get_checked_partition
 
 def extract():
     unchecked_partition = get_unchecked_partition()
@@ -117,3 +121,103 @@ def export_rand():
         leaned_raw_topic_data.write("\n".join(data_out))
         print(output_s2_data_file_name + f" saved with {len(data_out)} completed data")
     
+def g_title(title):
+    new_s = []
+    for c in title:
+        if c.isalpha():
+            new_s.append(c)
+    new_s = ''.join(new_s).lower()
+    return new_s
+
+def search_matching_result_with_title_in_s2_by_partition(partition_name_list_and_matched_jso_data):
+    partition_name_list = partition_name_list_and_matched_jso_data[0]
+    matched_jso_data = partition_name_list_and_matched_jso_data[1]
+    final_matched_result = []
+    titles_by_partition = get_all_titles_by_partitions(partition_name_list)
+    for data in titles_by_partition:
+        title = g_title(data['title'])
+        arxiv_data = matched_jso_data.get(title)
+        if arxiv_data != None:
+            final_matched_result.append({
+                'arxiv': {
+                    'id': arxiv_data['id'],
+                    'title': arxiv_data['title'],
+                    'categories': arxiv_data['categories'],
+                },
+                's2': data
+            })
+    
+    print(f'finished searching from: {partition_name_list[0]} to {partition_name_list[len(partition_name_list) - 1]} in {len(titles_by_partition)} s2 data')
+
+    return final_matched_result
+
+def matching_arxiv_data_by_topic(cate, src):
+    print("extracting data from " + src + "\nby cate regx: " + cate['regex'])
+
+    count = 0
+    total_count = 0
+    matched_jso_data = {}
+    with open(src) as f:
+        line = f.readline()
+        while line:
+            line_strip = line.strip()
+            jso = json.loads(line_strip)
+            total_count += 1
+            if (re.search(cate['regex'], jso["categories"]) != None):
+                count += 1
+                matched_jso_data[g_title(jso['title'])] = jso
+            line = f.readline()
+
+    print(f'({len(matched_jso_data)}/{total_count}) arxiv records are matched')
+
+    # partition = get_checked_partition()[:8]
+    partition = get_checked_partition()
+
+    # p_number = int(multiprocessing.cpu_count() / 2)
+    p_number = int(multiprocessing.cpu_count())
+    process_map_arg = []
+    i = 1
+    worker_number = p_number
+    duty_number_for_worker = int(len(partition) / worker_number)
+    current_partition_start_index = 0
+    while i <= worker_number:
+        process_map_arg.append(
+            [
+                partition[
+                    current_partition_start_index: 
+                    current_partition_start_index + duty_number_for_worker
+                ], 
+                matched_jso_data
+            ]
+        )
+        current_partition_start_index += duty_number_for_worker
+        i += 1
+
+    with Pool(p_number) as pool:
+        rs = pool.map_async(search_matching_result_with_title_in_s2_by_partition, process_map_arg)
+        data = reduce(lambda a, b: a+b, rs.get())
+
+    data_out = []
+    data_v_out = []
+
+    for d in data:
+        data_out.append(str(d['s2']['id']))
+        data_v_out.append(str(d['s2']['id']) + ' ' + d['arxiv']['categories'])
+        data_v_out.append('a:' + d['arxiv']['title'].replace('\n', '').replace('  ', ' '))
+        data_v_out.append('s:' + d['s2']['title'].replace('\n', ''))
+        data_v_out.append('\n')
+
+    percentage = round(len(data_out)/len(matched_jso_data) * 100, 2)
+    print(f'({len(data_out)}/{len(matched_jso_data)}) ({percentage}%) records are also found in s2 dataset')
+
+    output_data_file_name = os.path.join(os.environ.get("DATA_DIR"), "arxiv_" + cate['name'] + "_data_in_s2id.txt")
+    with open(output_data_file_name, "w") as leaned_raw_data:
+        leaned_raw_data.write("\n".join(data_out))
+        print(output_data_file_name + " saved")
+
+    output_data_file_name = os.path.join(os.environ.get("DATA_DIR"), "arxiv_" + cate['name'] + "_data_in_s2id_title_compare.txt")
+    with open(output_data_file_name, "w") as leaned_raw_data:
+        leaned_raw_data.write("\n".join(data_v_out))
+        print(output_data_file_name + " saved")
+
+    return matched_jso_data

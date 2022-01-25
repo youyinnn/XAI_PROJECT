@@ -26,6 +26,7 @@ def create_table():
         Column('authors', BLOB),
         Column('venue', String),
         Column('year', Integer),
+        # Column('doi', String),
         Column('n_citations', Integer),
         Column('partition', String),
     )
@@ -88,13 +89,9 @@ def get_checked_partition():
     return checked_partition
 
 def insert_data(dataset, partition):
-    # print(dataset[:1])
-    # dataset = dataset[:1]
     with Session(engine) as session:
         session.begin()
         try:
-            # session.add(some_object)
-            # session.add(some_other_object)
             sql = f'''
                 INSERT or ignore INTO cs (s2_id, title, abstract, authors, venue, year, n_citations, partition) 
                 VALUES (:s2_id, :title, :abstract, :authors, :venue, :year, :n_citations, '{partition}')
@@ -105,8 +102,6 @@ def insert_data(dataset, partition):
             raise
         else:
             session.commit()
-    # with engine.connect() as conn:
-        # conn.execute(text(sql), dataset)
 
 def check_partition(partition):
     with Session(engine) as session:
@@ -236,6 +231,22 @@ def get_count_by_regex_on_title_and_abstract(topic):
 
     print(f'time: {time.time() - start_time}')
 
+def get_all_doi_by_partitions(partition_name_list):
+    partition_name_list = list(map(lambda n: "'" + n + "'", partition_name_list))
+    titles = []
+    with engine.connect() as conn:
+        sql = f'''
+            select id, doi from cs where partition in ({','.join(partition_name_list)})
+        '''
+        rs = conn.execute(text(sql))
+        for row in rs:
+            titles.append({
+                'id': row[0],
+                'doi': row[1],
+            })
+    return titles
+
+
 def get_all_titles_by_partitions(partition_name_list):
     partition_name_list = list(map(lambda n: "'" + n + "'", partition_name_list))
     titles = []
@@ -251,4 +262,20 @@ def get_all_titles_by_partitions(partition_name_list):
             })
     return titles
 
-    
+def create_index():
+    with engine.connect() as conn:
+        sql = f'''
+            CREATE UNIQUE INDEX IF NOT EXISTS "id_idx" 
+            ON "cs" (
+                "id"	ASC
+            )
+        '''
+        conn.execute(text(sql))
+        sql = f'''
+            CREATE INDEX IF NOT EXISTS "p_idx" 
+            ON "cs" (
+                "partition"	ASC
+            )
+        '''
+        conn.execute(text(sql))
+    print(f'index created')

@@ -10,14 +10,15 @@ os.environ.setdefault("DATA_DIR", data_dir)
 
 from data_process.data_extraction.extract_arxiv_data import extract_by_cate as ebc
 from data_process.data_extraction.extract_arxiv_data import extract_by_topic as ebt
-from data_process.data_extraction.extract_arxiv_data import extract_all_by_topic as ebat
 from data_process.data_extraction.extract_arxiv_data import topic_count
 from data_process.data_completion.db import create_table, create_initial_records, clear_partition
 from data_process.data_completion.filling import fill, status, export, merge_from_tmp_db
 from data_process.conf import cates
 
 from data_process.data_completion.db_s2 import partition_check_init,get_data_count, get_count_by_regex_on_title_and_abstract as get_s2_topic_count
+from data_process.data_completion.db_s2 import create_index
 from data_process.data_extraction.extract_s2_data import extract, export as s2_export, export_rand as s2_export_rand
+from data_process.data_extraction.extract_s2_data import matching_arxiv_data_by_topic as madbt
 
 def main():
     argv_len = len(sys.argv)
@@ -91,15 +92,12 @@ def arxiv_data_cmd(cmd, argv_len):
             else:
                 print("No config cate for: " + cate_name)
 
-    if(cmd == 'arxiv-s2-data' and argv_len >= 3):
-        cate_name = sys.argv[2]
-        topic_name = sys.argv[3]
-        cate = cates.get(cate_name)
-        ebat(cate, os.path.join(data_dir, "arxiv-metadata-oai-snapshot.data"))
-
 def s2_data_cmd(cmd, argv_len):
     if (cmd == 'init-s2-database'):
-        partition_check_init()        
+        partition_check_init()    
+
+    if (cmd == 'create-s2-index'):
+        create_index()    
     
     if (cmd == 'extract-s2-cs-data'):
         extract()
@@ -122,6 +120,12 @@ def s2_data_cmd(cmd, argv_len):
         cate = cates.get('cs')
         topic = cate['topic'].get(topic_name)
         get_s2_topic_count(topic)
+
+    if(cmd == 'arxiv-s2-data' and argv_len >= 3):
+        cate_name = sys.argv[2]
+        topic_name = sys.argv[3]
+        cate = cates.get(cate_name)
+        madbt(cate, os.path.join(data_dir, "arxiv-metadata-oai-snapshot.data"))
 
 if __name__ == '__main__':
     main()
