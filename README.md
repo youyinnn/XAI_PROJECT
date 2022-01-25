@@ -187,6 +187,68 @@ will get the `data_process/data/s2_sample/completed_s2_1_to_30.data` file.
 
 The second command will extract 30000 randomly shuffled data from all the data(out of 6.6 million data).
 
+
+
+#### Extract data which labeled by arxiv
+
+Semantic scholar only give the top categories about the very base subject of the paper:
+
+- Computer Science
+- Physics
+- ...
+
+and there are almost 6.6 millions testable records related to "Computer Science".
+
+Say we have 10000 data and a query "machine learning" as input to the s2search. A more likely outcome is that only 3000 scores are valid scores.
+
+For better s2search score computing, we should **narrow the topic** of the input data to the same topic of the input query.
+
+Hence we use the second level categories defined by arxiv: https://arxiv.org/category_taxonomy.
+
+Extract the data by the following steps:
+
+1. **Create database index**
+
+   Create database index first!
+
+   Use command: 
+
+    ```bash
+    python main.py create-s2-index
+    ```
+   
+2. **Extract all data or randomly pick amount of data** 
+
+   1. To extract all:
+
+       ```bash
+       python main.py arxiv-s2-data-extract [second_cate_name]
+       ```
+
+       E.g.
+
+       ```bash
+       python main.py arxiv-s2-data-extract csai
+       ```
+
+       will then extract all data which have `cs.AI` label on arxiv to location `data_process/data/s2_sample/completed_s2_arxiv_csai_all_.data`.
+       
+   1. To extract certain amount of data randomly:
+   
+       ```bash
+       python main.py arxiv-s2-data-extract-rand [second_cate_name] [amount]
+       ```
+   
+       E.g.
+   
+       ```bash
+       python main.py arxiv-s2-data-extract-rand csai 1000
+       ```
+   
+       will then extract 1000 data randomly which have `cs.AI` label on arxiv to location `data_process/data/s2_sample/completed_s2_arxiv_csai_rand_1000_0x2b68d8c1_.data`.
+   
+   
+
 ## Feature Masking
 
 ### Feature Masking

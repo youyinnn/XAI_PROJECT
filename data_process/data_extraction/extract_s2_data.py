@@ -210,14 +210,44 @@ def matching_arxiv_data_by_topic(cate, src):
     percentage = round(len(data_out)/len(matched_jso_data) * 100, 2)
     print(f'({len(data_out)}/{len(matched_jso_data)}) ({percentage}%) records are also found in s2 dataset')
 
-    output_data_file_name = os.path.join(os.environ.get("DATA_DIR"), "arxiv_" + cate['name'] + "_data_in_s2id.txt")
+    output_data_file_name = os.path.join(os.environ.get("DATA_DIR"), 'index', "arxiv_" + cate['name'] + "_data_in_s2id.txt")
     with open(output_data_file_name, "w") as leaned_raw_data:
         leaned_raw_data.write("\n".join(data_out))
         print(output_data_file_name + " saved")
 
-    output_data_file_name = os.path.join(os.environ.get("DATA_DIR"), "arxiv_" + cate['name'] + "_data_in_s2id_title_compare.txt")
+    output_data_file_name = os.path.join(os.environ.get("DATA_DIR"), 'index', "arxiv_" + cate['name'] + "_data_in_s2id_title_compare.txt")
     with open(output_data_file_name, "w") as leaned_raw_data:
         leaned_raw_data.write("\n".join(data_v_out))
         print(output_data_file_name + " saved")
 
     return matched_jso_data
+
+def extract_from_arxiv_cate_id_list(cate_name, amount=None):
+    src = os.path.join(os.environ.get("DATA_DIR"), 'index',  "arxiv_" + cate_name + "_data_in_s2id.txt")
+    id_list = []
+    with open(src) as f:
+        lines = f.readlines()
+        for id in lines:
+            id = id.strip()
+            id_list.append(id)
+
+    sufix = 'all'
+    if amount != None:
+        print(f'randonly pick {amount} data from {len(id_list)}')
+        if (amount < len(id_list)):
+            random.shuffle(id_list)
+            id_list = id_list[:amount]
+            rand_sequence = hex(zlib.crc32(str(time.time()).encode('utf-8')))
+            sufix = f'rand_{amount}_{rand_sequence}'
+
+    data = get_data_with_ids(id_list)
+    data_out = []
+    for d in data:
+        d['authors'] = json.loads(d['authors'])
+        data_out.append(json.dumps(d))
+
+    
+    output_s2_data_file_name = os.path.join(os.environ.get("DATA_DIR"), 's2_sample', f"completed_s2_arxiv_{cate_name}_{sufix}_.data")
+    with open(output_s2_data_file_name, "w") as leaned_raw_topic_data:
+        leaned_raw_topic_data.write("\n".join(data_out))
+        print(output_s2_data_file_name + f" saved with {len(data_out)} completed data")
