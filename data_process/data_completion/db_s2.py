@@ -1,10 +1,14 @@
-import os, zlib, time
+import multiprocessing
+import os, zlib, time,re, threading
+from unittest import result
+
 from sqlalchemy import create_engine
 from sqlalchemy import Table, Column, Integer, String, BLOB
 # from data_process.data_completion.base import Base
 from sqlalchemy import MetaData
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from multiprocessing import Pool
 
 metadata_obj = MetaData()
 data_path = os.environ.get("DATA_DIR")
@@ -70,6 +74,18 @@ def get_unchecked_partition():
                 unchecked_partition.append(row[0])
 
     return unchecked_partition
+
+def get_checked_partition():
+    checked_partition = []
+    with engine.connect() as conn:
+            sql = f'''
+                select partition from partition_check where is_checked is 1
+            '''
+            result = conn.execute(text(sql))
+            for row in result:
+                checked_partition.append(row[0])
+
+    return checked_partition
 
 def insert_data(dataset, partition):
     # print(dataset[:1])
@@ -150,6 +166,26 @@ def get_data_with_ids(ids):
             })
     return data
 
+def get_partition_data(partition):
+    data = []
+    with engine.connect() as conn:
+        sql = f'''
+            select * from cs where partition is '{partition}'
+        '''
+        rs = conn.execute(text(sql))
+        for row in rs:
+            data.append({
+                'id': row[0],
+                's2_id': row[1],
+                'title': zlib.decompress(row[2]).decode('utf-8'),
+                'abstract': zlib.decompress(row[3]).decode('utf-8'),
+                'venue': row[5],
+                'authors': zlib.decompress(row[4]).decode('utf-8'),
+                'year': row[6],
+                'n_citations': row[7],
+            })
+    return data
+
 def get_data_count():
     with engine.connect() as conn:
         sql = f'''
@@ -158,3 +194,61 @@ def get_data_count():
         rs = conn.execute(text(sql))
         for row in rs:
             return row[0]
+
+def search_data_in_partition(list_and_topic):
+    partition_list = list_and_topic[0]
+    topic = list_and_topic[1]
+    flags = (re.I | re.M)
+    data_out = []
+    for p in partition_list:
+        data = get_partition_data(p)
+        for d in data:
+            if (re.search(topic['regex'], d["title"], flags) != None) or (re.search(topic['regex'], d["abstract"], flags) != None):
+                data_out.append(d)
+        # print(threading.get_ident(), f'searched {p}')
+
+    return data_out
+
+def get_count_by_regex_on_title_and_abstract(topic):
+    partition = get_checked_partition()
+    
+    start_time = time.time()
+    p_number = multiprocessing.cpu_count()
+    process_map_arg = []
+    i = 1
+    worker_number = p_number
+    duty_number_for_worker = int(6000 / worker_number)
+    current_partition_start_index = 0
+    while i <= worker_number:
+        process_map_arg.append(
+            [
+                partition[
+                    current_partition_start_index: 
+                    current_partition_start_index + duty_number_for_worker
+                ], 
+            topic]
+        )
+        current_partition_start_index += duty_number_for_worker
+        i += 1
+    with Pool(p_number) as pool:
+        rs = pool.map_async(search_data_in_partition, process_map_arg) 
+        print(len(rs.get()))
+
+    print(f'time: {time.time() - start_time}')
+
+def get_all_titles_by_partitions(partition_name_list):
+    partition_name_list = list(map(lambda n: "'" + n + "'", partition_name_list))
+    titles = []
+    with engine.connect() as conn:
+        sql = f'''
+            select id, title from cs where partition in ({','.join(partition_name_list)})
+        '''
+        rs = conn.execute(text(sql))
+        for row in rs:
+            titles.append({
+                'id': row[0],
+                'title': zlib.decompress(row[1]).decode('utf-8'),
+            })
+    return titles
+
+    

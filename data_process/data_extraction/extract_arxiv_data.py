@@ -3,7 +3,12 @@ import json
 import re
 import time
 import os
-import random
+import random, multiprocessing
+from multiprocessing import Pool
+from functools import reduce
+
+from numpy import partition
+from data_process.data_completion.db_s2 import get_all_titles_by_partitions, get_checked_partition
 
 def extract_by_cate(cate, src):
     print("extracting data from " + src + "\nby categories: " + cate['name'])
@@ -124,3 +129,66 @@ def topic_count(topic, src):
         print(f'No file {src} extract it first')
 
     print(f'total {count} indecial out of {total_count}')
+
+def search_matching_result_with_title_in_s2_by_partition(partition_name_list_and_matched_jso_data):
+    partition_name_list = partition_name_list_and_matched_jso_data[0]
+    matched_jso_data = partition_name_list_and_matched_jso_data[1]
+    final_matched_result = []
+    titles_by_partition = get_all_titles_by_partitions(partition_name_list)
+    for data in titles_by_partition:
+        title = data['title'].replace(' ', '').lower()
+        if matched_jso_data.get(title) != None:
+            final_matched_result.append(data)
+    
+    print(f'finished searching from: {partition_name_list[0]} to {partition_name_list[len(partition_name_list) - 1]} in {len(titles_by_partition)} s2 data')
+
+    return final_matched_result
+
+def extract_all_by_topic(cate, src):
+    print("extracting data from " + src + "\nby cate regx: " + cate['regex'])
+
+    count = 0
+    total_count = 0
+    matched_jso_data = {}
+    with open(src) as f:
+        line = f.readline()
+        while line:
+            line_strip = line.strip()
+            jso = json.loads(line_strip)
+            total_count += 1
+            if (re.search(cate['regex'], jso["categories"]) != None):
+                count += 1
+                matched_jso_data[jso['title'].replace(' ', '').lower()] = jso
+            line = f.readline()
+
+    print(f'({count}/{total_count}) records are matched the topic')
+
+    partition = get_checked_partition()
+
+    start_time = time.time()
+    p_number = multiprocessing.cpu_count()
+    process_map_arg = []
+    i = 1
+    worker_number = p_number
+    duty_number_for_worker = int(len(partition) / worker_number)
+    current_partition_start_index = 0
+    while i <= worker_number:
+        process_map_arg.append(
+            [
+                partition[
+                    current_partition_start_index: 
+                    current_partition_start_index + duty_number_for_worker
+                ], 
+                matched_jso_data
+            ]
+        )
+        current_partition_start_index += duty_number_for_worker
+        i += 1
+
+    with Pool(p_number) as pool:
+        rs = pool.map_async(search_matching_result_with_title_in_s2_by_partition, process_map_arg)
+        data = reduce(lambda a, b: a+b, rs.get())
+        print(len(data))
+
+
+    return matched_jso_data
