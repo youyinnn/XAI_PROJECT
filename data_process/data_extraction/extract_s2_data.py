@@ -154,6 +154,7 @@ def search_matching_result_with_title_in_s2_by_partition(partition_name_list_and
 def matching_arxiv_data_by_topic(cate, src):
     print("extracting data from " + src + "\nby cate regx: " + cate['regex'])
 
+    st = time.time()
     count = 0
     total_count = 0
     matched_jso_data = {}
@@ -220,7 +221,8 @@ def matching_arxiv_data_by_topic(cate, src):
         leaned_raw_data.write("\n".join(data_v_out))
         print(output_data_file_name + " saved")
 
-    return matched_jso_data
+    spend_t = round(time.time() - st, 4)
+    print(f'cost {spend_t} sec')
 
 def extract_from_arxiv_cate_id_list(cate_name, amount=None):
     src = os.path.join(os.environ.get("DATA_DIR"), 'index',  "arxiv_" + cate_name + "_data_in_s2id.txt")
