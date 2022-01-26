@@ -187,8 +187,6 @@ will get the `data_process/data/s2_sample/completed_s2_1_to_30.data` file.
 
 The second command will extract 30000 randomly shuffled data from all the data(out of 6.6 million data).
 
-
-
 #### Extract data which labeled by arxiv
 
 Semantic scholar only give the top categories about the very base subject of the paper:
@@ -211,43 +209,92 @@ Extract the data by the following steps:
 
    Create database index first!
 
-   Use command: 
+   Use command:
 
-    ```bash
-    python main.py create-s2-index
-    ```
-   
-2. **Extract all data or randomly pick amount of data** 
+   ```bash
+   python main.py create-s2-index
+   ```
+
+2. **Extract all data or randomly pick amount of data**
 
    1. To extract all:
 
-       ```bash
-       python main.py arxiv-s2-data-extract [second_cate_name]
-       ```
+      ```bash
+      python main.py arxiv-s2-data-extract [second_cate_name]
+      ```
 
-       E.g.
+      E.g.
 
-       ```bash
-       python main.py arxiv-s2-data-extract csai
-       ```
+      ```bash
+      python main.py arxiv-s2-data-extract csai
+      ```
 
-       will then extract all data which have `cs.AI` label on arxiv to location `data_process/data/s2_sample/completed_s2_arxiv_csai_all_.data`.
-       
+      will then extract all data which have `cs.AI` label on arxiv to location `data_process/data/s2_sample/completed_s2_arxiv_csai_all_.data`.
+
    1. To extract certain amount of data randomly:
-   
-       ```bash
-       python main.py arxiv-s2-data-extract-rand [second_cate_name] [amount]
-       ```
-   
-       E.g.
-   
-       ```bash
-       python main.py arxiv-s2-data-extract-rand csai 1000
-       ```
-   
-       will then extract 1000 data randomly which have `cs.AI` label on arxiv to location `data_process/data/s2_sample/completed_s2_arxiv_csai_rand_1000_0x2b68d8c1_.data`.
-   
-   
+
+      ```bash
+      python main.py arxiv-s2-data-extract-rand [second_cate_name] [amount]
+      ```
+
+      E.g.
+
+      ```bash
+      python main.py arxiv-s2-data-extract-rand csai 1000
+      ```
+
+      will then extract 1000 data randomly which have `cs.AI` label on arxiv to location `data_process/data/s2_sample/completed_s2_arxiv_csai_rand_1000_0x2b68d8c1_.data`.
+
+#### Data count of arxiv labeled data:
+
+<details>
+	<summary>Show</summary>
+
+```bash
+>>> python main.py arxiv-s2-data-count
+total 542877 labeled testable data in 40 categories
+{'name': 'cslg', 'count': 92938}
+{'name': 'cscv', 'count': 64531}
+{'name': 'csai', 'count': 39344}
+{'name': 'csit', 'count': 35936}
+{'name': 'cscl', 'count': 30750}
+{'name': 'cscr', 'count': 19374}
+{'name': 'csds', 'count': 19017}
+{'name': 'cssy', 'count': 17812}
+{'name': 'csni', 'count': 16422}
+{'name': 'csro', 'count': 16088}
+{'name': 'csdc', 'count': 14754}
+{'name': 'cssi', 'count': 14279}
+{'name': 'cslo', 'count': 11918}
+{'name': 'csna', 'count': 11581}
+{'name': 'cscy', 'count': 10994}
+{'name': 'csdm', 'count': 10444}
+{'name': 'csir', 'count': 10273}
+{'name': 'csne', 'count': 9834}
+{'name': 'csse', 'count': 9761}
+{'name': 'cscc', 'count': 8752}
+{'name': 'cshc', 'count': 8608}
+{'name': 'csgt', 'count': 8030}
+{'name': 'cssd', 'count': 7046}
+{'name': 'csdb', 'count': 6230}
+{'name': 'cscg', 'count': 5529}
+{'name': 'cspl', 'count': 5471}
+{'name': 'csma', 'count': 4562}
+{'name': 'csce', 'count': 4436}
+{'name': 'csfl', 'count': 3657}
+{'name': 'csdl', 'count': 3603}
+{'name': 'csmm', 'count': 3580}
+{'name': 'csgr', 'count': 3233}
+{'name': 'cspf', 'count': 2795}
+{'name': 'csar', 'count': 2563}
+{'name': 'cset', 'count': 2550}
+{'name': 'csoh', 'count': 1944}
+{'name': 'cssc', 'count': 1786}
+{'name': 'csms', 'count': 1670}
+{'name': 'csos', 'count': 633}
+```
+
+</details>
 
 ## Feature Masking
 

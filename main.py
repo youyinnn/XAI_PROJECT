@@ -19,7 +19,7 @@ from data_process.data_completion.db_s2 import partition_check_init,get_data_cou
 from data_process.data_completion.db_s2 import create_index
 from data_process.data_extraction.extract_s2_data import extract, export as s2_export, export_rand as s2_export_rand
 from data_process.data_extraction.extract_s2_data import matching_arxiv_data_by_topic as madbt
-from data_process.data_extraction.extract_s2_data import extract_from_arxiv_cate_id_list
+from data_process.data_extraction.extract_s2_data import extract_from_arxiv_cate_id_list, count_arxiv_data_by_cate
 
 def main():
     argv_len = len(sys.argv)
@@ -135,6 +135,9 @@ def s2_data_cmd(cmd, argv_len):
         cate_name = sys.argv[2]
         amount = int(sys.argv[3])
         extract_from_arxiv_cate_id_list(cate_name, amount)
+
+    if(cmd == 'arxiv-s2-data-count'):
+        count_arxiv_data_by_cate()
 
 if __name__ == '__main__':
     main()

@@ -4,6 +4,7 @@ import urllib.request
 import shutil, os, gzip,json,zlib, time, random, multiprocessing,re
 from multiprocessing import Pool
 from functools import reduce
+from data_process.conf import cates
 
 from data_process.data_completion.db_s2 import get_all_titles_by_partitions, get_checked_partition
 
@@ -253,3 +254,25 @@ def extract_from_arxiv_cate_id_list(cate_name, amount=None):
     with open(output_s2_data_file_name, "w") as leaned_raw_topic_data:
         leaned_raw_topic_data.write("\n".join(data_out))
         print(output_s2_data_file_name + f" saved with {len(data_out)} completed data")
+
+def count_arxiv_data_by_cate():
+    count = []
+    data_count = 0
+    cate_count = 0
+    for c in cates:
+        if c != 'cs':
+            cate_count += 1
+            src = os.path.join(os.environ.get("DATA_DIR"), 'index',  "arxiv_" + c + "_data_in_s2id.txt")
+            with open(src) as f:
+                lines = f.readlines()
+                data_count += len(lines)
+                count.append({
+                    'name': c,
+                    'count': len(lines)
+                })
+
+    count = sorted(count, key=lambda c: -c['count'])
+
+    print(f'total {data_count} labeled testable data in {cate_count} categories')
+    for l in count:
+        print(l)
