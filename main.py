@@ -17,7 +17,7 @@ from data_process.conf import cates
 
 from data_process.data_completion.db_s2 import partition_check_init,get_data_count, get_count_by_regex_on_title_and_abstract as get_s2_topic_count
 from data_process.data_completion.db_s2 import create_index
-from data_process.data_extraction.extract_s2_data import extract, export as s2_export, export_rand as s2_export_rand
+from data_process.data_extraction.extract_s2_data import extract, export as s2_export, export_rand as s2_export_rand, export_with_id as s2_export_with_id
 from data_process.data_extraction.extract_s2_data import matching_arxiv_data_by_topic as madbt
 from data_process.data_extraction.extract_s2_data import extract_from_arxiv_cate_id_list, count_arxiv_data_by_cate
 
@@ -115,6 +115,10 @@ def s2_data_cmd(cmd, argv_len):
 
     if (cmd == 'export-s2-cs-data-rand'):
         s2_export_rand()
+
+    if (cmd == 'export-s2-cs-data-from-id'):
+        ids_file = sys.argv[2]
+        s2_export_with_id(ids_file)
 
     if (cmd == 'count-s2-cs-topic'):
         topic_name = sys.argv[2]

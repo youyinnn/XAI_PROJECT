@@ -7,6 +7,7 @@ from functools import reduce
 from data_process.conf import cates
 
 from data_process.data_completion.db_s2 import get_all_titles_by_partitions, get_checked_partition
+data_loading_line_limit = 100000
 
 def extract():
     unchecked_partition = get_unchecked_partition()
@@ -86,16 +87,33 @@ def extract():
         # break
 
 def export(start, amount):
-    data = get_data(start, amount)
-    data_out = []
-    for d in data:
-        d['authors'] = json.loads(d['authors'])
-        data_out.append(json.dumps(d))
+    amount_left = int(amount)
+    start_for_this_round = int(start)
+    output_s2_incomplete_data_file_name = os.path.join(os.environ.get("DATA_DIR"), 's2_sample', f"completed_s2_{int(start) + 1}_to_{int(start) + int(amount)}#incomplete.data")
+    if os.path.exists(output_s2_incomplete_data_file_name):
+        os.remove(output_s2_incomplete_data_file_name)
 
-    output_s2_data_file_name = os.path.join(os.environ.get("DATA_DIR"), 's2_sample', f"completed_s2_{int(start) + 1}_to_{int(start) + int(amount)}.data")
-    with open(output_s2_data_file_name, "w") as leaned_raw_topic_data:
-        leaned_raw_topic_data.write("\n".join(data_out))
-        print(output_s2_data_file_name + f" saved with {len(data_out)} completed data")
+    output_s2_complete_data_file_name = os.path.join(os.environ.get("DATA_DIR"), 's2_sample', f"completed_s2_{int(start) + 1}_to_{int(start) + int(amount)}.data")
+    while amount_left > 0:
+        data_out = []
+        amount_for_this_round = data_loading_line_limit if amount_left > data_loading_line_limit else amount_left
+        data = get_data(start_for_this_round, amount_for_this_round)
+
+        amount_left -= data_loading_line_limit
+        print(f'{amount_left} left')
+        start_for_this_round += amount_for_this_round
+        for d in data:
+            d['authors'] = json.loads(d['authors'])
+            data_out.append(json.dumps(d))
+
+        with open(output_s2_incomplete_data_file_name, "a+") as f:
+            f.write("\n".join(data_out) + '\n')
+        data = []
+        
+    
+    os.rename(output_s2_incomplete_data_file_name, output_s2_complete_data_file_name)
+    print(output_s2_complete_data_file_name + f" saved with {amount} completed data")
+
 
 # this will take 600M more memories
 def export_rand():
@@ -121,7 +139,39 @@ def export_rand():
     with open(output_s2_data_file_name, "w") as leaned_raw_topic_data:
         leaned_raw_topic_data.write("\n".join(data_out))
         print(output_s2_data_file_name + f" saved with {len(data_out)} completed data")
+
+def export_with_id(ids_file):
+    ids = []
+    with open(ids_file) as f:
+        for id in f:
+            ids.append(id)
+
+    head, tail = os.path.split(ids_file)
+    output_s2_incomplete_data_file_name = os.path.join(os.environ.get("DATA_DIR"), 's2_sample', f"completed_s2_with_id.{tail}#incomplete.data")
+    if os.path.exists(output_s2_incomplete_data_file_name):
+        os.remove(output_s2_incomplete_data_file_name)
+    output_s2_complete_data_file_name = os.path.join(os.environ.get("DATA_DIR"), 's2_sample', f"completed_s2_with_id.{tail}.data")
+
+    start_idx = 0
+    ids_left = len(ids)
+    while ids_left > 0:
+        end_idx = start_idx + data_loading_line_limit if ids_left > data_loading_line_limit else start_idx + ids_left
+        data = get_data_with_ids(ids[start_idx: end_idx])
+        ids_left -= data_loading_line_limit
+        print(f'{ids_left} left')
+        start_idx = end_idx
+
+        data_out = []
+        for d in data:
+            d['authors'] = json.loads(d['authors'])
+            data_out.append(json.dumps(d))
+
+        with open(output_s2_incomplete_data_file_name, "a+") as f:
+            f.write("\n".join(data_out) + '\n')
     
+    os.rename(output_s2_incomplete_data_file_name, output_s2_complete_data_file_name)
+    print(output_s2_complete_data_file_name + f" saved with {len(ids)} completed data")
+
 def g_title(title):
     new_s = []
     for c in title:
