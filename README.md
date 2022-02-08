@@ -163,6 +163,8 @@ python main.py s2-cs-data-count
 
 #### Extract the sample data
 
+<details><summary>(Less focus, so it collapse)</summary>
+
 Then you can extract the data with:
 
 ```bash
@@ -186,6 +188,8 @@ python main.py export-s2-cs-data 1 30
 will get the `data_process/data/s2_sample/completed_s2_1_to_30.data` file.
 
 The second command will extract 30000 randomly shuffled data from all the data(out of 6.6 million data).
+
+</details>
 
 #### Extract data which labeled by arxiv
 
@@ -245,7 +249,7 @@ Extract the data by the following steps:
 
       will then extract 1000 data randomly which have `cs.AI` label on arxiv to location `data_process/data/s2_sample/completed_s2_arxiv_csai_rand_1000_0x2b68d8c1_.data`.
 
-#### Data count of arxiv labeled data:
+#### Data count of arxiv labeled data
 
 <details>
 	<summary>Show</summary>
@@ -295,6 +299,28 @@ total 542877 labeled testable data in 40 categories
 ```
 
 </details>
+
+#### Get variant data
+
+First, you need to have the seed data file: e.g. `data_process/data/variant/cslg_ml_seed`.
+
+Then, run the command:
+
+```bash
+python main.py variant [seed_data_path] [source_data_path]
+```
+
+E.g.:
+
+```bash
+python main.py variant data_process/data/variant/cslg_ml_seed data_process/data/s2_sample/completed_s2_arxiv_cslg_all_.data
+```
+
+This will use the `cslg` data as the variance source for each data in the seed data.
+
+The logic of the variation could be found at `data_process/data_extraction/extract_variant_data.py`
+
+Then it will generate the variant data at `data_process/data/variant`.
 
 ## Feature Masking
 

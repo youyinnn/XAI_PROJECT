@@ -21,12 +21,21 @@ from data_process.data_extraction.extract_s2_data import extract, export as s2_e
 from data_process.data_extraction.extract_s2_data import matching_arxiv_data_by_topic as madbt
 from data_process.data_extraction.extract_s2_data import extract_from_arxiv_cate_id_list, count_arxiv_data_by_cate
 
+from data_process.data_extraction.extract_variant_data import varient
+
 def main():
     argv_len = len(sys.argv)
     if argv_len > 1:
         cmd = sys.argv[1]
         arxiv_data_cmd(cmd, argv_len)
         s2_data_cmd(cmd, argv_len)
+        variant_data_cmd(cmd, argv_len)
+
+def variant_data_cmd(cmd, argv_len):
+    if (cmd == 'variant'):
+        seed_list = sys.argv[2]
+        src_data = sys.argv[3]
+        varient(seed_list, src_data)   
 
 def arxiv_data_cmd(cmd, argv_len):
     # if (cmd == 'extract-cate' and argv_len >= 3):
